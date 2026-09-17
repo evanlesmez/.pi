@@ -1,8 +1,13 @@
 {
   "lastChangelogVersion": "0.85.1",
   "theme": "dark",
-  "defaultProvider": "opencode-go",
-  "defaultModel": "grok-4.5",
+  "defaultProvider": "anthropic",
+  "defaultModel": "claude-fable-5-1",
   "defaultThinkingLevel": "low",
-  "tuiMode": "regular"
+  "tuiMode": "regular",
+  "modelThinkingLevels": {
+    "anthropic/claude-fable-5-1": "medium",
+    "anthropic/claude-fable-5": "medium",
+    "opencode-go/grok-4.6": "low"
+  }
 }
