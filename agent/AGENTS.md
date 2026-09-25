@@ -8,6 +8,7 @@ Never commit. Only suggest a concise commit message when asked.
 - Zero comments unless the *why* is non-obvious. Names should carry the meaning.
 - Tests: minimal lines, focused on core logic. Not all cases need to be covered.
 - Priorities in order: correctness, performance, maintainability, security.
+- Always keep existing documentation in sync with code changes as needed.
 
 ## Tooling
 - Always prefer typed language variations e.g. Typescript over JS

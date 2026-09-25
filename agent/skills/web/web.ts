@@ -1,40 +1,113 @@
 #!/usr/bin/env node
-import { execFileSync } from "node:child_process";
+import { spawn } from "node:child_process";
 
 const [cmd, arg, limit = "8"]: (string | undefined)[] = process.argv.slice(2);
+const PORT = 9222;
+const WS_URL = `ws://127.0.0.1:${PORT}/session`;
+const LAUNCH_ARGS = [
+  "-P",
+  "agent",
+  "--class",
+  "librewolf-agent",
+  "--remote-debugging-port",
+  String(PORT),
+  "--remote-allow-origins",
+  `ws://localhost:${PORT}`,
+];
 
-const decode = (s: string): string =>
-  s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#x?[0-9a-f]+;/gi, "")
-   .replace(/&nbsp;/g, " ");
-
-const htmlToText = (html: string): string =>
-  decode(
-    html
-      .replace(/<(script|style|noscript|svg|nav|footer|header)[\s\S]*?<\/\1>/gi, "")
-      .replace(/<br\s*\/?>|<\/(p|div|li|h[1-6]|tr|pre|blockquote)>/gi, "\n")
-      .replace(/<[^>]+>/g, "")
-  ).replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n").trim();
-
-async function ddgSearch(q: string, n: number): Promise<void> {
-  const res = await fetch("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q), {
-    headers: { "User-Agent": "Mozilla/5.0" },
+const connect = (): Promise<WebSocket | null> =>
+  new Promise((r) => {
+    const ws = new WebSocket(WS_URL);
+    ws.onopen = () => r(ws);
+    ws.onerror = () => r(null);
   });
-  const html = await res.text();
-  const re = /class="result__a" href="[^"]*uddg=([^&"]+)[^>]*>([\s\S]*?)<\/a>[\s\S]*?class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
-  let m: RegExpExecArray | null, i = 0;
-  while ((m = re.exec(html)) && i++ < n)
-    console.log(`${decodeURIComponent(m[1])}\n  ${htmlToText(m[2])}\n  ${htmlToText(m[3])}\n`);
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((r) => setTimeout(r, ms));
+
+async function librewolfConnect(): Promise<WebSocket> {
+  let ws = await connect();
+  if (ws) return ws;
+  spawn("librewolf", LAUNCH_ARGS, { detached: true, stdio: "ignore" }).unref();
+  for (let i = 0; i < 30 && !ws; i++) {
+    await sleep(500);
+    ws = await connect();
+  }
+  if (!ws) throw new Error(`LibreWolf did not open port ${PORT}`);
+  return ws;
 }
 
-function chromiumFetchPage(url: string): void {
-  const html = execFileSync(
-    "chromium",
-    ["--headless=new", "--disable-gpu", "--no-sandbox", "--virtual-time-budget=5000", "--dump-dom", url],
-    { encoding: "utf8", maxBuffer: 64 << 20, stdio: ["ignore", "pipe", "ignore"], timeout: 30000 }
+async function librewolfEval(url: string, expression: string): Promise<string> {
+  const ws = await librewolfConnect();
+  let id = 0;
+  const pending = new Map<number, (m: any) => void>();
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data as string);
+    if (m.id) pending.get(m.id)?.(m);
+  };
+  const send = (method: string, params: object): Promise<any> =>
+    new Promise((r) => {
+      ws.send(JSON.stringify({ id: ++id, method, params }));
+      pending.set(id, r);
+    });
+  let session = await send("session.new", { capabilities: {} });
+  for (let i = 0; i < 100 && session.type === "error"; i++) {
+    await sleep(300);
+    session = await send("session.new", { capabilities: {} });
+  }
+  if (session.type === "error") {
+    throw new Error(`BiDi: ${session.message} (restart LibreWolf)`);
+  }
+  const { result: { context } } = await send("browsingContext.create", {
+    type: "tab",
+  });
+  try {
+    await send("browsingContext.navigate", { context, url, wait: "complete" });
+    const r = await send("script.evaluate", {
+      expression,
+      target: { context },
+      awaitPromise: false,
+    });
+    if (r.type === "error" || r.result?.type === "exception") {
+      throw new Error(`eval: ${r.message ?? r.result?.exceptionDetails?.text}`);
+    }
+    return r.result?.result?.value ?? "";
+  } finally {
+    await send("browsingContext.close", { context });
+    await send("session.end", {});
+    ws.close();
+  }
+}
+
+const DDG_EXTRACT =
+  `JSON.stringify([...document.querySelectorAll(".result:not(.result--ad)")].map(r => {
+  const a = r.querySelector(".result__a");
+  return { url: new URL(a?.href ?? "", location.href).searchParams.get("uddg") ?? a?.href ?? "",
+           title: a?.innerText ?? "", snippet: r.querySelector(".result__snippet")?.innerText ?? "" };
+}))`;
+
+async function ddgSearch(q: string, n: number): Promise<void> {
+  const url = "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q);
+  const results: { url: string; title: string; snippet: string }[] = JSON.parse(
+    await librewolfEval(url, DDG_EXTRACT) || "[]",
   );
-  console.log(htmlToText(html));
+  if (!results.length) {
+    console.error("No results — check the LibreWolf window for a CAPTCHA.");
+    process.exit(2);
+  }
+  results.slice(0, n).forEach((r) =>
+    console.log(`${r.url}\n  ${r.title}\n  ${r.snippet}\n`)
+  );
+}
+
+async function fetchPage(url: string): Promise<void> {
+  const text = await librewolfEval(url, "document.body.innerText");
+  console.log(text.replace(/\n\s*\n+/g, "\n").trim());
 }
 
 if (cmd === "ddgSearch" && arg) await ddgSearch(arg, +limit!);
-else if (cmd === "fetchPage" && arg) chromiumFetchPage(arg);
-else console.error("usage: web.ts ddgSearch <query> [limit] | web.ts fetchPage <url>"), process.exit(1);
+else if (cmd === "fetchPage" && arg) await fedchPage(arg);
+else {console.error(
+    "usage: web.ts ddgSearch <query> [limit] | web.ts fetchPage <url>",
+  ),
+    process.exit(1);}
