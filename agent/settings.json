@@ -2,8 +2,8 @@
   "lastChangelogVersion": "0.87.1",
   "theme": "dark",
   "defaultProvider": "anthropic",
-  "defaultModel": "claude-fable-5-1",
-  "defaultThinkingLevel": "low",
+  "defaultModel": "claude-opus-5-5",
+  "defaultThinkingLevel": "medium",
   "tuiMode": "regular",
   "modelThinkingLevels": {
     "anthropic/claude-fable-5-1": "medium",

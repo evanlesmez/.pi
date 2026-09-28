@@ -106,7 +106,7 @@ async function fetchPage(url: string): Promise<void> {
 }
 
 if (cmd === "ddgSearch" && arg) await ddgSearch(arg, +limit!);
-else if (cmd === "fetchPage" && arg) await fedchPage(arg);
+else if (cmd === "fetchPage" && arg) await fetchPage(arg);
 else {console.error(
     "usage: web.ts ddgSearch <query> [limit] | web.ts fetchPage <url>",
   ),
