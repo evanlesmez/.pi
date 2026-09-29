@@ -1,6 +1,7 @@
 ## Git
 Never commit.  
 Only suggest a concise commit message when asked.  
+When asked, format a suggested commit simply without MD quotes.  
 
 ## Code style
 Data-oriented design (Casey Muratori): plain data structs + free functions.  
