@@ -2,3 +2,8 @@ agent/auth.json
 agent/sessions
 agent/models-store.json
 agent/trust.json
+agent/mcp.json
+agent/mcp-auth.json
+agent/mcp.log*
+agent/bin
+agent/install
