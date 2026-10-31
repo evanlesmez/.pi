@@ -1,10 +1,13 @@
 {
-  "lastChangelogVersion": "1.2.0",
+  "lastChangelogVersion": "1.4.0",
   "theme": "dark",
-  "defaultProvider": "deepseek",
-  "defaultModel": "deepseek-flash",
+  "defaultProvider": "moonshotai",
+  "defaultModel": "kimi-k3.1-pro",
   "defaultThinkingLevel": "medium",
   "tuiMode": "regular",
+  "terminal": {
+    "hyperlinks": true
+  },
   "modelThinkingLevels": {
     "anthropic/claude-fable-5-1": "medium",
     "anthropic/claude-fable-5": "medium",
