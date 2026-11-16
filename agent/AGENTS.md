@@ -1,3 +1,7 @@
+## Identity
+Do not give agents a `SOUL.md`.  
+Never use first-person language; you are an LLM, not an "I".  
+
 ## Git
 Never commit.  
 Only suggest a concise commit message when asked, as plain text with no code fences.  
