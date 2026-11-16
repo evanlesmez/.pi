@@ -1,0 +1,38 @@
+{
+  "$schema": "https://pi.dev/schemas/models.schema.json",
+  "providers": {
+    "open-webui": {
+      "name": "Open WebUI",
+      "baseUrl": "https://lever.animalequality.org/api",
+      "api": "openai-completions",
+      "apiKey": "unused",
+      "models": [
+        {
+          "id": "deepseek/deepseek-flash",
+          "name": "DeepSeek Flash via Open WebUI",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "thinkingLevelMap": {
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "max": "max"
+          },
+          "contextWindow": 1000000,
+          "maxTokens": 393216,
+          "compat": {
+            "thinkingFormat": "deepseek",
+            "maxTokensField": "max_tokens"
+          },
+          "cost": {
+            "input": 0.3,
+            "output": 1.2,
+            "cacheRead": 0.006,
+            "cacheWrite": 0
+          }
+        }
+      ]
+    }
+  }
+}

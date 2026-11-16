@@ -1,8 +1,8 @@
 {
-  "lastChangelogVersion": "1.4.0",
+  "lastChangelogVersion": "1.5.2",
   "theme": "dark",
-  "defaultProvider": "moonshotai",
-  "defaultModel": "kimi-k3.1-pro",
+  "defaultProvider": "open-webui",
+  "defaultModel": "deepseek/deepseek-flash",
   "defaultThinkingLevel": "medium",
   "tuiMode": "regular",
   "terminal": {

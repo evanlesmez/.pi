@@ -7,3 +7,4 @@ agent/mcp-auth.json
 agent/mcp.log*
 agent/bin
 agent/install
+**.log
